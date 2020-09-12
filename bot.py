@@ -9,7 +9,7 @@ Webbot for Sauna reservations in HOAS reservation system
 5) Make reservation(s) if there is a time that fills criteria
 
 Development directions
-- Change reservation.date to date object
+- Change reservation.date to date object ERROR TRACK
 - Create exe-file
 - Run cron script autonomously on Raspberry Pi
 
@@ -17,8 +17,11 @@ Development directions
 """
 from crypting import write_key, load_key, encrypt, decrypt
 from webbot import Browser
-import time
+from time import localtime
+from time import sleep
 from datetime import date
+from datetime import time
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from bs4 import BeautifulSoup
 import calendar as cd
@@ -34,7 +37,7 @@ function_calls = False
 attr_th = 8
 
 # Check local time -> global user session time
-localtm = time.localtime()
+localtm = localtime()
 year = localtm.tm_year
 month = localtm.tm_mon
 day = localtm.tm_mday
@@ -75,10 +78,9 @@ class reservationCal:
 
     def addHour(self, res):
         try:
-            contents = res.date.split(".")
-            y = int(contents[2])
-            m = int(contents[1])
-            d = int(contents[0])
+            y = res.dt.year
+            m = res.dt.month
+            d = res.dt.day
     
             # Add (if necessary) and return week and order number
             res_date = date(y, m, d)
@@ -91,7 +93,6 @@ class reservationCal:
             dayToAdd = self.Week.Day(wdN, m, [])
             [dayX, dON] = weekX.addDay(dayToAdd)
     
-            # SHOULD BE OK UNTIL THIS!!!
             # Add (or replace) the reservation, True if added, False if replaced
             status = self.weeks[wON].days[dON].addReservation(res)
             return status
@@ -140,14 +141,14 @@ class reservationCal:
             def addReservation(self, Reservation):
                 try:
                     # If largest hour -> append
-                    if len(self.reservations) == 0 or Reservation.time > self.reservations[len(self.reservations)-1].time:
+                    if len(self.reservations) == 0 or Reservation.dt.hour > self.reservations[len(self.reservations)-1].dt.hour:
                         self.reservations.append(Reservation)
                     for i in range(len(self.reservations)-1):
                         # If reservation already exists -> break
-                        if Reservation.time == self.reservations[i].time:
+                        if Reservation.dt.hour == self.reservations[i].dt.hour:
                             self.reservations[i] = Reservation
                         # If new but not largest reservation -> insert
-                        if Reservation.time < self.reservations[i].time:
+                        if Reservation.dt.hour < self.reservations[i].dt.hour:
                             self.reservations.insert(i, Reservation)
                 except Exception as e:
                     print(e)
@@ -160,29 +161,24 @@ class reservationCal:
 # week1.insertDay(day1)
 # week1.insertDay(day2)
 # resCal = reservationCal([])
-# res1 = Reservation(True, True, "3.8.2020", 18, True, 10)
+# res1 = Reservation(True, True, datetime(2020, 9, 10, 18), True, 10)
 # resCal.addHour(res1)
-# res2 = Reservation(True, True, "4.8.2020", 19, True, 10)
+# res2 = Reservation(True, True, datetime(2020, 9, 9, 18), True, 10)
 # resCal.addHour(res2)
 
 
 # Implement reservation as a class with status, time and attractiveness
 class Reservation:
-    def __init__(self, own, free, date, time, current, attr):
+    def __init__(self, own, free, dt, current, attr):
         self.own = own  # boolean
         self.free = free  # boolean
-        self.date = date  # string (e.g. 12.6.2020)
-        self.time = time  # string (e.g. 18)
+        self.dt = dt  # datetime
         self.current = current  # boolean, True for current month
         self.attr = attr  # int (0-10)
 
     def calculateAttr(self):
-        contents = self.date.split(".")
-        y = int(contents[2])
-        m = int(contents[1])
-        d = int(contents[0])
-        wkd = cd.weekday(y, m, d)
-        t = int(self.time[:2])
+        wkd = self.dt.weekday()
+        h = self.dt.hour
         a = 0
         # weekday points
         if wkd == 6:
@@ -192,13 +188,13 @@ class Reservation:
         else:
             a = a
         #  Time points
-        if t == 20:
+        if h == 20:
             a += 5
-        elif t == 19:
+        elif h == 19:
             a += 4
-        elif t == 21:
+        elif h == 21:
             a += 3
-        elif t == 18:
+        elif h == 18:
             a += 2
         else:
             a = a
@@ -211,7 +207,7 @@ def openSauna(web, filename, key):
 
     # Open login page
     web.go_to("https://booking.hoas.fi/auth/login")
-    time.sleep(3)
+    sleep(3)
 
     # Read login info file
     # encrypt the file
@@ -321,7 +317,7 @@ def currentDay(web):
     #             first = True
     #         else:
     #             web.click("Edellinen")
-    #             time.sleep(1)
+    #             sleep(1)
     # except Exception as e:
     #     print(e)
     #     print("Couldnt go back to current day")
@@ -344,7 +340,7 @@ def reservationsLeft(web, two_months):
             move = 2-wkday
             web.click(toClick)
             web.click(str(day+move))
-            time.sleep(2)
+            sleep(2)
             parsed = returnSauna(web)
 
         res_left = parsed.find("td", colspan="1")  # tag
@@ -356,7 +352,7 @@ def reservationsLeft(web, two_months):
         print("Reservations left for the current month: "+str(left_current))
     except Exception as e:
         print(e)
-        print("Couldnt parse current month reservations left")
+        print("Couldn't parse current month reservations left")
 
     if two_months:
         # Then check the next month
@@ -402,17 +398,21 @@ def ownReservations(web):
         res_all = parsed.find_all("a", class_="sauna")
         for res in res_all:
             contents = res.string.split()
-            if int(contents[1][3:5]) == month:  # current month
-                res = Reservation("True", "False", contents[1], contents[2],
+            d = int(contents[1][0:1])
+            m = int(contents[1][3:5])
+            y = int(contents[1][7:10])
+            h = int(contents[2][0:1])
+            if m == month:  # current month
+                res = Reservation("True", "False", datetime(y, m, d, h),
                                   "True", 10)
             else:  # next month
-                res = Reservation("True", "False", contents[1], contents[2],
+                res = Reservation("True", "False", datetime(y, m, d, h),
                                   "False", 10)
             res.calculateAttr()
             own_list.append(res)
     except Exception as e:
         print(e)
-        print("Couldnt parse own reservations")
+        print("Couldn't parse own reservations")
 
     print(str(len(own_list))+" own reservations")
     return own_list
@@ -430,13 +430,17 @@ def listDayReservations(parsed):
             print("All reserved")
         else:
             for open in opens:
-                daytime = open.attrs["data-date"].split()
-                if int(daytime[0][3:5]) == month:  # current month
-                    res = Reservation(False, True, daytime[0],
-                                      daytime[1].split(":")[0], "True", 10)
+                contents = open.attrs["data-date"].split()
+                d = int(contents[0][0:2])
+                m = int(contents[0][3:5])
+                y = int(contents[0][6:10])
+                h = int(contents[1][0:2])
+                if m == month:  # current month
+                    res = Reservation(False, True, datetime(y, m, d, h),
+                                      "True", 10)
                 else:  # next month
-                    res = Reservation(False, True, daytime[0],
-                                      daytime[1].split(":")[0], "False", 10)
+                    res = Reservation(False, True, datetime(y, m, d, h),
+                                      "False", 10)
                 res.calculateAttr()
                 res_list.append(res)
     except Exception as e:
@@ -467,14 +471,14 @@ def freeReservations(web):
             if following.has_attr("style") is True and following.attrs["style"] == "visibility: hidden;":
                 #  Last day
                 last = True
-                time.sleep(1)
+                sleep(1)
             else:
                 web.click("Seuraava")
-                time.sleep(1)
+                sleep(1)
 
         except Exception as e:
             print(e)
-            print("Couldnt parse free reservations")
+            print("Couldn't parse free reservations")
 
     # Go back to current day
     currentDay(web)
@@ -490,9 +494,9 @@ def availableReservations(res_left, own_list, free_list):
     # Pop out reservations if no credits left
     counter = 0
     for day_list in free_list:
-        if res_left[0] == 0 and int(day_list[0].date.split('.')[1]) == month:
+        if res_left[0] == 0 and int(day_list[0].dt.month) == month:
             del free_list[counter]
-        if res_left[1] == 0 and int(day_list[0].date.split('.')[1]) == month+1:
+        if res_left[1] == 0 and int(day_list[0].dt.month) == month+1:
             del free_list[counter]
         counter += 1
 
@@ -500,7 +504,7 @@ def availableReservations(res_left, own_list, free_list):
     same_day = False
     for day_list in free_list:
         for own in own_list:
-            if own.date == day_list[0].date:  # str == str (e.g. 03.08.2020)
+            if own.dt == day_list[0].dt:
                 same_day = True
         # If match was not found, append
         if not same_day:
@@ -520,7 +524,8 @@ def showReturnPossibleReservations(excluded_free_list):
     new_list = []
     for free_day in excluded_free_list:
         for free_hour in free_day:
-            print(free_hour.date+" at "+free_hour.time+" with attr. "+str(free_hour.attr))
+            print(str(free_hour.dt.day)+" day at "+str(free_hour.dt.hour)
+                  +" o'clock with attractiveness: "+str(free_hour.attr))
             new_list.append(free_hour)
     sorted_list = sorted(new_list, key=lambda x: x.attr, reverse=True)
 
@@ -544,12 +549,12 @@ def wantedHour(tag, searchTime):
 
 
 # Reservation function, return True if succesfull
-def reserve(web, reservation):
+def reserve(web, res):
     if function_calls: print("Inside reserve function")
     success = False
 
     # Open the wanted day
-    wantedDay(web, reservation.date.split(".")[0])
+    wantedDay(web, str(res.dt.day))
 
     # Return Sauna source soup
     parsed = returnSauna(web)
@@ -558,20 +563,20 @@ def reserve(web, reservation):
     href = ""
     try:
         opens = parsed.find_all("a", title="Varaa")  # type = ResultSet
-        searchTime = reservation.date+" "+reservation.time+":00 - "+str(int(reservation.time)+1)+":00"
+        searchTime = res.dt.strftime("%d.%m.%Y")+" "+str(res.dt.hour)+":00 - "+str(res.dt.hour+1)+":00"
         for open in opens:
             if wantedHour(open, searchTime):
                 print("Still reservable")
                 href = open.attrs["href"]
                 success = True
-                
+
     except Exception as e:
         print(e)
-        print("Couldnt parse reservations")
+        print("Couldn't parse reservations")
 
     # Make reservation by clicking the link
     web.go_to(href)
-    time.sleep(1)
+    sleep(1)
 
     return success
 
@@ -579,28 +584,26 @@ def reserve(web, reservation):
 def hasNeighbors(own_list, res):
     hasN = False
 
-    # Convert to date
-    dmy = res.date.split('.')
-    y_date = date(int(dmy[2]), int(dmy[1]), int(dmy[0]))
+    # Previous and following date
+    y_date = res.dt.date()
     yminus1 = y_date + relativedelta(days=-1)
     yplus1 = y_date + relativedelta(days=+1)
 
     for r in own_list:
-        dmy = r.date.split('.')
-        x_date = date(int(dmy[2]), int(dmy[1]), int(dmy[0]))
+        x_date = r.dt.date()
         if x_date == yminus1 or x_date == yplus1:
             hasN = True
 
     return(hasN)
 
 
-def reserveSuitable(web, own_list, attr_list):
+def reserveSuitable(web, own_list, attr_list, m):
     found = False
     success = False
     reservation = attr_list[0]
 
     for res in attr_list:
-        if res.attr < attr_th:  # No suitable reservation, stop
+        if res.attr < attr_th and res.dt.month == m:  # No suitable reservation, stop
             found = False
             break
         else:
@@ -609,13 +612,14 @@ def reserveSuitable(web, own_list, attr_list):
             if neighbors:  # Has neighbor days, try next
                 continue
             else:
+                print(res.dt)
                 success = reserve(web, res)
                 if success:  # Succesfully reserved, save and stop
                     reservation = res
                     break
                 else:
                     print("Failed to reserve suitable time")
-    
+
     return [found, success, reservation]
 
 
@@ -665,14 +669,27 @@ def main():
     attr_list = showReturnPossibleReservations(excluded_free_list)
 
     # Reserve with attractiveness and calendar criterias
-    [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list)
-    if suitable:
-        if success:
-            print("Reservation made")
+    if res_left[0] > 0:
+        [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list, month)
+        if suitable:
+            if success:
+                print("Reservation made for current month")
+            else:
+                print("Couldn't reserve any suitable time")
         else:
-            print("Couldn't reserve any suitable time")
+            print("No suitable reservations")
+    elif res_left[1] > 0:
+        [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list, month+1)
+        if suitable:
+            if success:
+                print("Reservation made for next month")
+            else:
+                print("Couldn't reserve any suitable time")
+        else:
+            print("No suitable reservations")
     else:
-        print("No suitable reservations")
+        print('No reservations left for either month')
+
 
 if __name__ == "__main__":
     main()
