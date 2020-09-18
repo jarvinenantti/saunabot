@@ -662,6 +662,9 @@ def main():
     else:
         print('No reservations left for either month')
 
+    # Close the web session
+    web.quit()
+
 
 if __name__ == "__main__":
     main()
