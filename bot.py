@@ -9,9 +9,10 @@ Webbot for Sauna reservations in HOAS reservation system
 5) Make reservation(s) if there is a time that fills criteria
 
 Development directions
-- Change reservation.date to date object ERROR TRACK
 - Create exe-file
-- Run cron script autonomously on Raspberry Pi
+- Run cron script autonomously on Raspberry Pi (cron)
+https://www.raspberrypi.org/documentation/linux/usage/cron.md
+- Communicate via Telegram bot
 
 @author: ANTJA
 """
@@ -81,18 +82,18 @@ class reservationCal:
             y = res.dt.year
             m = res.dt.month
             d = res.dt.day
-    
+
             # Add (if necessary) and return week and order number
             res_date = date(y, m, d)
             wN = res_date.isocalendar()[1]
             weekToAdd = self.Week(wN, [])
             [weekX, wON] = self.addWeek(weekToAdd)
-    
+
             # Add (if necessary) and return the day and order number
             wdN = cd.weekday(y, m, d)
             dayToAdd = self.Week.Day(wdN, m, [])
             [dayX, dON] = weekX.addDay(dayToAdd)
-    
+
             # Add (or replace) the reservation, True if added, False if replaced
             status = self.weeks[wON].days[dON].addReservation(res)
             return status
@@ -137,7 +138,7 @@ class reservationCal:
                 self.mN = mN  # int
                 # List of daily reservations
                 self.reservations = reservations  # list
-    
+
             def addReservation(self, Reservation):
                 try:
                     # If largest hour -> append
@@ -153,18 +154,6 @@ class reservationCal:
                 except Exception as e:
                     print(e)
                     print('Failed to add reservation')
-
-
-# day1 = Week.Day(3, month, [])
-# day2 = Week.Day(4, month, [])
-# week1 = Week(weekN, [])
-# week1.insertDay(day1)
-# week1.insertDay(day2)
-# resCal = reservationCal([])
-# res1 = Reservation(True, True, datetime(2020, 9, 10, 18), True, 10)
-# resCal.addHour(res1)
-# res2 = Reservation(True, True, datetime(2020, 9, 9, 18), True, 10)
-# resCal.addHour(res2)
 
 
 # Implement reservation as a class with status, time and attractiveness
@@ -207,7 +196,7 @@ def openSauna(web, filename, key):
 
     # Open login page
     web.go_to("https://booking.hoas.fi/auth/login")
-    sleep(3)
+    sleep(1)
 
     # Read login info file
     # encrypt the file
@@ -261,7 +250,7 @@ def nextMonthReservable(web):
     lastAvailableDay = date.today() + relativedelta(days=+forward)
     if lastAvailableDay.month > month:
         reservable = True
-        print("Reservations can be made also for next month")
+        print("Reservations can also be made for the next month")
 
     return reservable
 
@@ -307,21 +296,6 @@ def currentDay(web):
         print(e)
         print("Couldn't move into current day")
 
-    # first = False
-    # try:
-    #     while first is False:
-    #         parsed = returnSauna(web)
-    #         previous = parsed.find("a", class_="prev")
-    #         if previous.attrs["style"] == "visibility: hidden;":
-    #             #  Current day
-    #             first = True
-    #         else:
-    #             web.click("Edellinen")
-    #             sleep(1)
-    # except Exception as e:
-    #     print(e)
-    #     print("Couldnt go back to current day")
-
 
 # Find and return how many reservations are left to use
 def reservationsLeft(web, two_months):
@@ -340,7 +314,7 @@ def reservationsLeft(web, two_months):
             move = 2-wkday
             web.click(toClick)
             web.click(str(day+move))
-            sleep(2)
+            sleep(1)
             parsed = returnSauna(web)
 
         res_left = parsed.find("td", colspan="1")  # tag
@@ -539,9 +513,6 @@ def showReturnPossibleReservations(excluded_free_list):
     return(sorted_list)
 
 
-#%%
-
-
 # Check whether the reservation is the wanted
 def wantedHour(tag, searchTime):
     if function_calls: print("Inside wantedHour function")
@@ -603,8 +574,9 @@ def reserveSuitable(web, own_list, attr_list, m):
     reservation = attr_list[0]
 
     for res in attr_list:
-        if res.attr < attr_th and res.dt.month == m:  # No suitable reservation, stop
-            found = False
+        if res.dt.month != m:  # Only check wanted month
+            continue
+        elif res.attr < attr_th:  # No suitable reservation, stop
             break
         else:
             found = True
@@ -673,7 +645,7 @@ def main():
         [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list, month)
         if suitable:
             if success:
-                print("Reservation made for current month")
+                print("Reservation made for the current month")
             else:
                 print("Couldn't reserve any suitable time")
         else:
@@ -682,7 +654,7 @@ def main():
         [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list, month+1)
         if suitable:
             if success:
-                print("Reservation made for next month")
+                print("Reservation made for the next month")
             else:
                 print("Couldn't reserve any suitable time")
         else:
