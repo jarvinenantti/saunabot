@@ -129,7 +129,7 @@ class reservationCal:
             except Exception as e:
                 print(e)
                 print('Failed to add day')
-    
+
         class Day:
             def __init__(self, wdN, mN, reservations):
                 # Weekday number
@@ -170,11 +170,13 @@ class Reservation:
         h = self.dt.hour
         a = 0
         # weekday points
-        if wkd == 6:
+        if wkd == 6:  # Sun
             a += 5
-        elif wkd == 5 or wkd == 4:
+        elif wkd == 5 or wkd == 4:  # Fri-Sat
             a += 3
-        else:
+        elif wkd == 2:  # Wed
+            a += 4
+        else:  # Thu
             a = a
         #  Time points
         if h == 20:
@@ -192,7 +194,6 @@ class Reservation:
 
 # Open sauna reservation system
 def openSauna(web, filename, key):
-    if function_calls: print("Inside openSauna function")
 
     # Open login page
     web.go_to("https://booking.hoas.fi/auth/login")
@@ -229,8 +230,7 @@ def openSauna(web, filename, key):
 
 # Return sauna source soup
 def returnSauna(web):
-    if function_calls: print("Inside returnSauna function")
-    # Extract reservations source
+
     source = web.get_page_source()
     source_soup = BeautifulSoup(source, "html.parser")
 
@@ -239,7 +239,6 @@ def returnSauna(web):
 
 # Return True if next month is reservable
 def nextMonthReservable(web):
-    if function_calls: print("Inside nextMonthReservable function")
 
     reservable = False
     forward = 0  # how many days forward is last reservable
@@ -255,9 +254,8 @@ def nextMonthReservable(web):
     return reservable
 
 
-# Move into day of interest
+# Move into the day of interest
 def wantedDay(web, wantDay):
-    if function_calls: print("Inside wantedDay function")
 
     parsed = returnSauna(web)
     toClick = parsed.find("a", class_="js-datepicker").string
@@ -265,16 +263,14 @@ def wantedDay(web, wantDay):
     web.click(str(wantDay))
 
 
-# Move into current day
+# Move into the current day
 def currentDay(web):
-    if function_calls: print("Inside currentDay function")
 
     # First check if need to turn back month in calendar
     parsed = returnSauna(web)
     try:
         toClick = parsed.find("a", class_="js-datepicker").string
         web.click(toClick)
-        
         web.click()
         web.click(str(day))
     except Exception as e:
@@ -297,9 +293,8 @@ def currentDay(web):
         print("Couldn't move into current day")
 
 
-# Find and return how many reservations are left to use
+# Find and return how many reservations are left for use
 def reservationsLeft(web, two_months):
-    if function_calls: print("Inside reservationsLeft function")
 
     parsed = returnSauna(web)
 
@@ -363,7 +358,6 @@ def reservationsLeft(web, two_months):
 
 # Find and return all own reservations
 def ownReservations(web):
-    if function_calls: print("Inside ownReservations function")
     own_list = []
 
     # Return Sauna source soup
@@ -394,7 +388,6 @@ def ownReservations(web):
 
 # Find and return all reservations of particular day
 def listDayReservations(parsed):
-    if function_calls: print("Inside listDayReservations function")
     res_list = []
 
     # Find if there is reservations left
@@ -426,7 +419,6 @@ def listDayReservations(parsed):
 
 # Find and return all free reservations
 def freeReservations(web):
-    if function_calls: print("Inside freeReservations function")
     free_list = []
 
     #  Go to current day
@@ -462,7 +454,6 @@ def freeReservations(web):
 
 # Find and return all free reservations, excluding days with own reservations
 def availableReservations(res_left, own_list, free_list):
-    if function_calls: print("Inside availableReservations function")
     excluded_free_list = []
 
     # Pop out reservations if no credits left
@@ -490,7 +481,6 @@ def availableReservations(res_left, own_list, free_list):
 
 # Print and return reservable times in attr-order
 def showReturnPossibleReservations(excluded_free_list):
-    if function_calls: print("Inside showReturnPossibleReservations function")
 
     # Create a new list:
     # 1) with flat hierarchy (no day lists)
@@ -498,8 +488,7 @@ def showReturnPossibleReservations(excluded_free_list):
     new_list = []
     for free_day in excluded_free_list:
         for free_hour in free_day:
-            print(str(free_hour.dt.day)+" day at "+str(free_hour.dt.hour)
-                  +" o'clock with attractiveness: "+str(free_hour.attr))
+            print(str(free_hour.dt.day)+" day at "+str(free_hour.dt.hour)+" o'clock with attractiveness: "+str(free_hour.attr))
             new_list.append(free_hour)
     sorted_list = sorted(new_list, key=lambda x: x.attr, reverse=True)
 
@@ -513,15 +502,13 @@ def showReturnPossibleReservations(excluded_free_list):
     return(sorted_list)
 
 
-# Check whether the reservation is the wanted
+# Check whether the reservation is the wanted, and return boolean
 def wantedHour(tag, searchTime):
-    if function_calls: print("Inside wantedHour function")
-    return tag.attrs["data-date"] == searchTime
+    return (tag.attrs["data-date"] == searchTime)
 
 
 # Reservation function, return True if succesfull
 def reserve(web, res):
-    if function_calls: print("Inside reserve function")
     success = False
 
     # Open the wanted day
@@ -534,7 +521,8 @@ def reserve(web, res):
     href = ""
     try:
         opens = parsed.find_all("a", title="Varaa")  # type = ResultSet
-        searchTime = res.dt.strftime("%d.%m.%Y")+" "+str(res.dt.hour)+":00 - "+str(res.dt.hour+1)+":00"
+        searchTime = res.dt.strftime("%d.%m.%Y")+" "+str(res.dt.hour)+":00 - "
+        +str(res.dt.hour+1)+":00"
         for open in opens:
             if wantedHour(open, searchTime):
                 print("Still reservable")
@@ -552,6 +540,7 @@ def reserve(web, res):
     return success
 
 
+# Check whether own reservation at previous or next day, return boolean
 def hasNeighbors(own_list, res):
     hasN = False
 
@@ -568,6 +557,20 @@ def hasNeighbors(own_list, res):
     return(hasN)
 
 
+# Check whether two or more reservations in same week, return boolean
+def twoPerWeek(own_list, res):
+
+    count = 0
+    r_WN = res.dt.isocalendar()[1]
+    for own in own_list:
+        o_WN = own.dt.isocalendar()[1]
+        if o_WN == r_WN:
+            count += 1
+
+    return (count >= 2)
+
+
+# Try to reserve suitable reservation and return success state
 def reserveSuitable(web, own_list, attr_list, m):
     found = False
     success = False
@@ -581,7 +584,8 @@ def reserveSuitable(web, own_list, attr_list, m):
         else:
             found = True
             neighbors = hasNeighbors(own_list, res)
-            if neighbors:  # Has neighbor days, try next
+            two = twoPerWeek(own_list, res)
+            if neighbors or two:  # Has neighbors, or enough per week
                 continue
             else:
                 print(res.dt)
@@ -599,7 +603,6 @@ def reserveSuitable(web, own_list, attr_list, m):
 
 
 def main():
-    if function_calls: print("Inside main function")
 
     key = load_key()
     filename = "login_info.txt"
@@ -642,7 +645,8 @@ def main():
 
     # Reserve with attractiveness and calendar criterias
     if res_left[0] > 0:
-        [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list, month)
+        [suitable, success, reservation] = reserveSuitable(web, own_list,
+                                                           attr_list, month)
         if suitable:
             if success:
                 print("Reservation made for the current month")
@@ -651,7 +655,8 @@ def main():
         else:
             print("No suitable reservations")
     elif res_left[1] > 0:
-        [suitable, success, reservation] = reserveSuitable(web, own_list, attr_list, month+1)
+        [suitable, success, reservation] = reserveSuitable(web, own_list,
+                                                           attr_list, month+1)
         if suitable:
             if success:
                 print("Reservation made for the next month")
