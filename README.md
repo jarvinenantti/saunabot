@@ -1,12 +1,12 @@
 # saunabot
-Python web bot for sauna reservation
+Python web bot for automating HOAS sauna-reservations
 
-Utilize python webbot for HOAS sauna reservations
+May serve as a basis for automating other similar reservation systems
+
+1st mid-goal: Automate some/all of the reserving process using webbot-library:
 https://github.com/nateshmbhat/webbot
+2nd mid-goal: Transer to Raspberry Pi (and change webbot to selenium)
+https://www.selenium.dev/
+3rd final goal: Use Telegram to communicate with Pi and sauna bot
 
-Can be converted to other kind of reservation systems, with similar idea.
-
-Goal: Automate some/all of the reserving process.
-Ultimate goal: Android/iOS app based reservation bot
-
-Requires HOAS account (Login info deleted for obvious reasons :))
+Requires HOAS account. Login info deleted for obvious reasons :)
