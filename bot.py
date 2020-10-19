@@ -8,6 +8,10 @@ Webbot for Sauna reservations in HOAS reservation system
 4) Open calendar and choose best day based on user preferations
 5) Make reservation(s) if there is a time that fills criteria
 
+Bugs:
+- Own reservation parsing broke
+- Do Not reserve two reservation for same day (because of own reservation check broke?)
+
 Development directions
 - Create exe-file
 - Run cron script autonomously on Raspberry Pi (cron)
