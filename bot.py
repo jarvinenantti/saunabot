@@ -41,6 +41,9 @@ function_calls = False
 # Define reservation attractiveness threshold on scale of 0-10
 attr_th = 8
 
+# URL for sauna calendar
+hrefC = 'https://booking.hoas.fi/varaus/service/timetable/331/'
+
 # Check local time -> global user session time
 localtm = localtime()
 year = localtm.tm_year
@@ -258,13 +261,14 @@ def nextMonthReservable(web):
     return reservable
 
 
-# Move into the day of interest
+# Move into the day of interest, eats date
 def wantedDay(web, wantDay):
 
-    parsed = returnSauna(web)
-    toClick = parsed.find("a", class_="js-datepicker").string
-    web.click(toClick)
-    web.click(str(wantDay))
+    strd = format(wantDay.day, '02')
+    strm = format(wantDay.month, '02')
+    stry = str(wantDay.year)
+    href = hrefC+strd+'/'+strm+'/'+stry
+    web.go_to(href)
 
 
 # Move into the current day
@@ -343,7 +347,7 @@ def reservationsLeft(web, two_months):
             if lastAvailableDay.month == month:
                 left_next == 0
             else:
-                wantedDay(web, lastAvailableDay.day)
+                wantedDay(web, lastAvailableDay)
                 parsed = returnSauna(web)
                 toClick = parsed.find("a", class_="js-datepicker").string
                 res_left = parsed.find("td", colspan="1")  # tag
@@ -370,10 +374,10 @@ def ownReservations(web):
         res_all = parsed.find_all("a", class_="sauna")
         for res in res_all:
             contents = res.string.split()
-            d = int(contents[1][0:1])
+            d = int(contents[1][0:2])
             m = int(contents[1][3:5])
-            y = int(contents[1][7:10])
-            h = int(contents[2][0:1])
+            y = int(contents[1][6:10])
+            h = int(contents[2][0:2])
             if m == month:  # current month
                 res = Reservation("True", "False", datetime(y, m, d, h),
                                   "True", 10)
@@ -516,7 +520,7 @@ def reserve(web, res):
     success = False
 
     # Open the wanted day
-    wantedDay(web, str(res.dt.day))
+    wantedDay(web, res.dt)
 
     # Return Sauna source soup
     parsed = returnSauna(web)
@@ -525,8 +529,7 @@ def reserve(web, res):
     href = ""
     try:
         opens = parsed.find_all("a", title="Varaa")  # type = ResultSet
-        searchTime = res.dt.strftime("%d.%m.%Y")+" "+str(res.dt.hour)+":00 - "
-        +str(res.dt.hour+1)+":00"
+        searchTime = res.dt.strftime("%d.%m.%Y")+" "+str(res.dt.hour)+":00 - "+str(res.dt.hour+1)+":00"
         for open in opens:
             if wantedHour(open, searchTime):
                 print("Still reservable")
