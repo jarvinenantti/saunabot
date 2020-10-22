@@ -263,10 +263,11 @@ def nextMonthReservable():
 # Move into the day of interest
 def wantedDay(web, wantDay):
 
-    parsed = returnSauna(web)
-    toClick = parsed.find("a", class_="js-datepicker").string
-    web.find_elements_by_link_text(str(toClick))[0].click()
-    web.find_elements_by_link_text(str(wantDay))[0].click()
+    strd = format(wantDay.day, '02')
+    strm = format(wantDay.month, '02')
+    stry = str(wantDay.year)
+    href = hrefC+strd+'/'+strm+'/'+stry
+    web.get(href)
 
 
 # Move into the current day
@@ -326,7 +327,7 @@ def reservationsLeft(web, two_months):
             if lastAvailableDay.month == month:
                 left_next == 0
             else:
-                wantedDay(web, lastAvailableDay.day)
+                wantedDay(web, lastAvailableDay)
                 parsed = returnSauna(web)
                 toClick = parsed.find("a", class_="js-datepicker").string
                 res_left = parsed.find("td", colspan="1")  # tag
@@ -353,10 +354,10 @@ def ownReservations(web):
         res_all = parsed.find_all("a", class_="sauna")
         for res in res_all:
             contents = res.string.split()
-            d = int(contents[1][0:1])
+            d = int(contents[1][0:2])
             m = int(contents[1][3:5])
-            y = int(contents[1][7:10])
-            h = int(contents[2][0:1])
+            y = int(contents[1][6:10])
+            h = int(contents[2][0:2])
             if m == month:  # current month
                 res = Reservation("True", "False", datetime(y, m, d, h),
                                   "True", 10)
@@ -499,7 +500,7 @@ def reserve(web, res):
     success = False
 
     # Open the wanted day
-    wantedDay(web, str(res.dt.day))
+    wantedDay(web, res.dt)
 
     # Return Sauna source soup
     parsed = returnSauna(web)
