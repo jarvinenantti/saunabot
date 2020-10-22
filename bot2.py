@@ -267,21 +267,26 @@ def wantedDay(web, wantDay):
     strm = format(wantDay.month, '02')
     stry = str(wantDay.year)
     href = hrefC+strd+'/'+strm+'/'+stry
-    web.get(href)
+    try:
+        web.get(href)
+    except Exception as e:
+        print(e)
+        print('Couldn't move into the wanted day')
 
 
 # Move into the current day
 def currentDay(web):
 
     toAdd = str(day)+"/"+str(month)+"/"+str(year)
+    href = hrefC+toAdd
     try:
-        web.get(hrefC)
+        web.get(href)
     except Exception as e:
         print(e)
         print("Couldn't move into the current day")
 
 
-# Find and return how many reservations are left for use
+# Find and return how many reservations are left in the system
 def reservationsLeft(web, two_months):
 
     parsed = returnSauna(web)
@@ -289,7 +294,7 @@ def reservationsLeft(web, two_months):
     left_current = -1
     left_next = -1
 
-    # First check the current month
+    # Check the current month
     try:
         # If Mon or Tue, go to Wed to see reservations left
         toClick = parsed.find("a", class_="js-datepicker").string
