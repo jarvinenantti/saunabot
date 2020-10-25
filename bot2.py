@@ -263,24 +263,30 @@ def nextMonthReservable():
 # Move into the day of interest
 def wantedDay(web, wantDay):
 
-    parsed = returnSauna(web)
-    toClick = parsed.find("a", class_="js-datepicker").string
-    web.find_elements_by_link_text(str(toClick))[0].click()
-    web.find_elements_by_link_text(str(wantDay))[0].click()
+    strd = format(wantDay.day, '02')
+    strm = format(wantDay.month, '02')
+    stry = str(wantDay.year)
+    href = hrefC+strd+'/'+strm+'/'+stry
+    try:
+        web.get(href)
+    except Exception as e:
+        print(e)
+        print('Couldn't move into the wanted day')
 
 
 # Move into the current day
 def currentDay(web):
 
     toAdd = str(day)+"/"+str(month)+"/"+str(year)
+    href = hrefC+toAdd
     try:
-        web.get(hrefC)
+        web.get(href)
     except Exception as e:
         print(e)
         print("Couldn't move into the current day")
 
 
-# Find and return how many reservations are left for use
+# Find and return how many reservations are left in the system
 def reservationsLeft(web, two_months):
 
     parsed = returnSauna(web)
@@ -288,7 +294,7 @@ def reservationsLeft(web, two_months):
     left_current = -1
     left_next = -1
 
-    # First check the current month
+    # Check the current month
     try:
         # If Mon or Tue, go to Wed to see reservations left
         toClick = parsed.find("a", class_="js-datepicker").string
@@ -326,7 +332,7 @@ def reservationsLeft(web, two_months):
             if lastAvailableDay.month == month:
                 left_next == 0
             else:
-                wantedDay(web, lastAvailableDay.day)
+                wantedDay(web, lastAvailableDay)
                 parsed = returnSauna(web)
                 toClick = parsed.find("a", class_="js-datepicker").string
                 res_left = parsed.find("td", colspan="1")  # tag
@@ -353,10 +359,10 @@ def ownReservations(web):
         res_all = parsed.find_all("a", class_="sauna")
         for res in res_all:
             contents = res.string.split()
-            d = int(contents[1][0:1])
+            d = int(contents[1][0:2])
             m = int(contents[1][3:5])
-            y = int(contents[1][7:10])
-            h = int(contents[2][0:1])
+            y = int(contents[1][6:10])
+            h = int(contents[2][0:2])
             if m == month:  # current month
                 res = Reservation("True", "False", datetime(y, m, d, h),
                                   "True", 10)
@@ -499,7 +505,7 @@ def reserve(web, res):
     success = False
 
     # Open the wanted day
-    wantedDay(web, str(res.dt.day))
+    wantedDay(web, res.dt)
 
     # Return Sauna source soup
     parsed = returnSauna(web)
