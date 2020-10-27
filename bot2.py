@@ -29,11 +29,13 @@ from dateutil.relativedelta import relativedelta
 from bs4 import BeautifulSoup
 import calendar as cd
 
+# Define bot file location and login info filename
+loc = "/home/pi/Desktop/saunabot/"
+filename = "login_info.txt"
 
 # IF FIRST TIME: generate and write a new key (uncomment)
-# filename = "login_info"
-# key = write_key()
-# encrypt(filename, key)
+# key = write_key(loc)
+# encrypt(loc, filename, key)
 
 # global URL-address for the HOAS sauna system
 # calendar
@@ -208,13 +210,13 @@ def openSauna(web, filename, key):
 
     # Read login info file
     # encrypt the file
-    decrypt(filename, key)
-    f = open(filename, "r")
+    decrypt(loc, filename, key)
+    f = open(loc+filename, "r")
     name = f.readline().split()  # exclude \n
     psswd = f.readline()
     f.close()
     # decrypt the file
-    encrypt(filename, key)
+    encrypt(loc, filename, key)
 
     # Input username
     elem = web.find_element_by_name("login")
@@ -271,7 +273,7 @@ def wantedDay(web, wantDay):
         web.get(href)
     except Exception as e:
         print(e)
-        print('Couldn't move into the wanted day')
+        print("Couldn't move into the wanted day")
 
 
 # Move into the current day
@@ -595,8 +597,7 @@ def reserveSuitable(web, own_list, attr_list, m):
 
 def main():
 
-    key = load_key()
-    filename = "login_info.txt"
+    key = load_key(loc)
 
     # Make instance of browser
     web = webdriver.Chrome()
