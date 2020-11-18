@@ -2,20 +2,22 @@
 """
 Webbot for Sauna reservations in HOAS reservation system
 
+Operation shortly:
 1) Login to HOAS reservations system
 2) Open sauna reservations
 3) Check how many monthly reservations are left, if none -> do nothing
-4) Open calendar and choose best day based on user preferations
-5) Make reservation(s) if there is a time that fills criteria
+4) Go through all open reservations
+5) Choose the best day and time based on user preferations
+5) Make reservation(s) if left and suitable
 
 Bugs:
 
-Development directions
+Development directions:
 - Requiremetns into own file
 - Move into AWS
 
 
-@author: ANTJA
+@author: Antti J
 """
 from crypting import write_key, load_key, encrypt, decrypt
 from webbot import Browser
@@ -52,7 +54,6 @@ def nextMonthReservable(web):
         print("Reservations can also be made for the next month")
 
     return reservable
-
 
 
 #%%
@@ -101,7 +102,7 @@ def main():
 
     # Reserve with attractiveness and calendar criterias
     month = localtm.tm_mon
-    if res_left[0] > 0:
+    if res_left[0] > 0:  # Current month
         [suitable, success, reservation] = st.reserveSuitable(web, own_list,
                                                               attr_list, month, attr_th)
         if suitable:
@@ -111,7 +112,7 @@ def main():
                 print("Couldn't reserve any suitable time")
         else:
             print("No suitable reservations")
-    elif res_left[1] > 0:
+    elif res_left[1] > 0:  # Next month
         [suitable, success, reservation] = st.reserveSuitable(web, own_list,
                                                               attr_list, month+1, attr_th)
         if suitable:
