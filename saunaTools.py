@@ -16,21 +16,21 @@ localtm = localtime()
 
 
 # Open sauna reservation system
-def openSauna(web, filename, key):
+def openSauna(web, loc, filename, key):
 
     # Open login page
     web.go_to(hrefL)
     sleep(1)
 
     # Read login info file
-    # encrypt the file
-    decrypt(filename, key)
-    f = open(filename, "r")
+    # decrypt the file
+    decrypt(loc, filename, key)
+    f = open(loc+filename, "r")
     name = f.readline().split()  # exclude \n
     psswd = f.readline()
     f.close()
-    # decrypt the file
-    encrypt(filename, key)
+    # encrypt the file
+    encrypt(loc, filename, key)
 
     # Input username and password
     web.type(name[0], into="login")

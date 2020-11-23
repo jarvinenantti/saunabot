@@ -22,16 +22,21 @@ Development steps:
 from crypting import write_key, load_key, encrypt, decrypt
 from webbot import Browser
 from time import localtime
+from time import sleep
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import os as os
 from resCal import reservationCal
 import saunaTools as st
 import listReservations as lr
 
+# Define bot location and login info filename
+loc = os.getcwd()+"\\"
+filename = "login_info.txt"
 
 # IF FIRST TIME: generate and write a new key (uncomment)
-# write_key()
-# encrypt(filename, key)
+# write_key(loc)
+# encrypt(loc, filename, key)
 
 # Define reservation attractiveness threshold on a scale of 0-10
 attr_th = 8
@@ -62,14 +67,13 @@ def nextMonthReservable(web):
 
 def main():
 
-    key = load_key()
-    filename = "login_info.txt"
+    key = load_key(loc)
 
     # Make instance of browser
     web = Browser()
 
     # Open Sauna reservation system
-    st.openSauna(web, filename, key)
+    st.openSauna(web, loc, filename, key)
 
     # Check if reservations can be made for next month
     two_months = nextMonthReservable(web)
@@ -108,6 +112,10 @@ def main():
     # Update calendar
     for res in reserved:
         resCal.addHour(res)
+
+    # Logout
+    web.click("Kirjaudu ulos")
+    sleep(1)
 
     # Close the web session
     web.quit()
