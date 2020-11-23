@@ -7,6 +7,9 @@ class Reservation:
         self.current = current  # boolean, True for current month
         self.attr = attr  # int (0-10)
 
+    def dispTime(self):
+        print('Reservation datetime: '+str(self.dt))
+
     def calculateAttr(self):
         wkd = self.dt.weekday()
         h = self.dt.hour

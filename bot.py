@@ -10,8 +10,10 @@ Webbot for Sauna reservations in HOAS reservation system
 
 Bugs:
 
-Development directions
-- Requiremetns into own file
+Development steps:
+- Refactor reservation function (check status)
+- Logout
+- Change to selenium
 - Move into AWS
 
 
@@ -100,29 +102,12 @@ def main():
     attr_list = lr.showReturnPossibleReservations(excluded_free_list)
 
     # Reserve with attractiveness and calendar criterias
-    month = localtm.tm_mon
-    if res_left[0] > 0:
-        [suitable, success, reservation] = st.reserveSuitable(web, own_list,
-                                                              attr_list, month, attr_th)
-        if suitable:
-            if success:
-                print("Reservation made for the current month")
-            else:
-                print("Couldn't reserve any suitable time")
-        else:
-            print("No suitable reservations")
-    elif res_left[1] > 0:
-        [suitable, success, reservation] = st.reserveSuitable(web, own_list,
-                                                              attr_list, month+1, attr_th)
-        if suitable:
-            if success:
-                print("Reservation made for the next month")
-            else:
-                print("Couldn't reserve any suitable time")
-        else:
-            print("No suitable reservations")
-    else:
-        print('No reservations left for either month')
+    # Return list of reserved reservations
+    reserved = st.reserveSuitable(web, own_list, attr_list, attr_th, res_left)
+
+    # Update calendar
+    for res in reserved:
+        resCal.addHour(res)
 
     # Close the web session
     web.quit()

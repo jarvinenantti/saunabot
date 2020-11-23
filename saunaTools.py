@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 from time import sleep
 from time import localtime
+import datetime
 from dateutil.relativedelta import relativedelta
 from crypting import write_key, load_key, encrypt, decrypt
+from reservation import Reservation
 
 
 # URL for login-page
@@ -164,30 +166,39 @@ def reserve(web, res):
 
     return success
 
-# Try to reserve suitable reservation and return success state
-def reserveSuitable(web, own_list, attr_list, m, attr_th):
-    found = False
+
+# Try to reserve suitable reservations, and return list of reserved
+def reserveSuitable(web, own_list, attr_list, attr_th, res_left):
     success = False
-    reservation = attr_list[0]
+    reserved = []
 
-    for res in attr_list:
-        if res.dt.month != m:  # Only check wanted month
-            continue
-        elif res.attr < attr_th:  # No suitable reservation, stop
-            break
+    currentM = datetime.date.today().month
+    # nextM = (datetime.date.today() + relativedelta(months=1)).month
+    counter = currentM
+    for left in res_left:
+        if left == 0:
+            print('No reservations left for month '+str(counter))
         else:
-            found = True
-            neighbors = hasNeighbors(own_list, res)
-            two = twoPerWeek(own_list, res)
-            if neighbors or two:  # Has neighbors, or enough per week
-                continue
-            else:
-                print(res.dt)
-                success = reserve(web, res)
-                if success:  # Succesfully reserved, save and stop
-                    reservation = res
-                    break
+            for res in attr_list:
+                if res.dt.month != counter:  # Only check wanted month
+                    continue
+                elif res.attr < attr_th:  # No suitable reservations
+                    continue
                 else:
-                    print("Failed to reserve suitable time")
+                    neighbors = hasNeighbors(own_list, res)
+                    two = twoPerWeek(own_list, res)
+                    if neighbors or two:  # Has neighbors, or enough per week
+                        continue
+                    else:
+                        print('Suitable reservation found')
+                        res.dispTime()
+                        success = reserve(web, res)
+                        if success:  # Succesfully reserved -> save to list
+                            reserved.append(res)
+                            own_list.append(res)
+                            continue
+                        else:
+                            print("Failed to reserve the suitable time")
+        counter += 1
 
-    return [found, success, reservation]
+    return reserved
