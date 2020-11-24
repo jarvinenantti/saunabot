@@ -3,6 +3,7 @@ from time import sleep
 from time import localtime
 import datetime
 from dateutil.relativedelta import relativedelta
+from selenium.webdriver.common.keys import Keys
 from crypting import write_key, load_key, encrypt, decrypt
 from reservation import Reservation
 
@@ -19,8 +20,8 @@ localtm = localtime()
 def openSauna(web, loc, filename, key):
 
     # Open login page
-    web.go_to(hrefL)
-    sleep(1)
+    web.get(hrefL)
+    sleep(0.5)
 
     # Read login info file
     # decrypt the file
@@ -32,17 +33,16 @@ def openSauna(web, loc, filename, key):
     # encrypt the file
     encrypt(loc, filename, key)
 
-    # Input username and password
-    web.type(name[0], into="login")
-    web.type(psswd, into="password")
-    # web.click('submit', tag='button')
-    web.click("Kirjaudu")
+    # Input username
+    elem = web.find_element_by_name("login")
+    elem.send_keys(name[0])
+    # and password
+    elem = web.find_element_by_name("password")
+    elem.send_keys(psswd)
+    web.find_elements_by_xpath("//input[@value='Kirjaudu']")[0].click()
 
     # Go to saunavuorot
-    web.go_to(hrefC)
-
-    # Open developer view, not working???
-    web.press(web.Key.CONTROL + web.Key.SHIFT + "i")
+    web.get(hrefC)
 
     # # Export my calendar reservations
     # url2 = 'https://booking.hoas.fi/varaus/export/calendar/personal_feed/63146/fi/c91b6832f7e5770112a86689799ea766'
@@ -54,7 +54,7 @@ def openSauna(web, loc, filename, key):
 # Return sauna source soup
 def returnSauna(web):
 
-    source = web.get_page_source()
+    source = web.page_source
     source_soup = BeautifulSoup(source, "html.parser")
 
     return(source_soup)
@@ -67,37 +67,20 @@ def wantedDay(web, wantDay):
     strm = format(wantDay.month, '02')
     stry = str(wantDay.year)
     href = hrefC+strd+'/'+strm+'/'+stry
-    web.go_to(href)
+    web.get(href)
 
 
 # Move into the current day
 def currentDay(web):
 
-    # First check if need to turn back month in calendar
-    parsed = returnSauna(web)
+    toAdd = str(localtm.tm_mday)+"/"+str(localtm.tm_mon)+"/"+str(localtm.tm_year)
+    href = hrefC+toAdd
     try:
-        toClick = parsed.find("a", class_="js-datepicker").string
-        web.click(toClick)
-        web.click()
-        web.click(str(localtm.tm_mday))
+        web.get(href)
+        sleep(0.5)
     except Exception as e:
         print(e)
-        print("Couldn't move into current day")
-
-    parsed = returnSauna(web)
-    try:
-        # Open calendar
-        toClick = parsed.find("a", class_="js-datepicker").string
-        web.click(toClick)
-        # Go back to current month if possible
-        parsed = returnSauna(web)
-        toClickM = parsed.find("span", class_="ui-icon ui-icon-circle-triangle-w").string
-        web.click(toClickM, number=2)
-        # Click back to current day
-        web.click(str(localtm.tm_mday))
-    except Exception as e:
-        print(e)
-        print("Couldn't move into current day")
+        print("Couldn't move into the current day")
 
 
 # Check whether own reservation at previous or next day, return boolean
@@ -161,24 +144,29 @@ def reserve(web, res):
         print("Couldn't parse reservations")
 
     # Make reservation by clicking the link
-    web.go_to(href)
-    sleep(1)
+    web.get(href)
+    sleep(0.5)
 
     return success
 
 
 # Try to reserve suitable reservations, and return list of reserved
 def reserveSuitable(web, own_list, attr_list, attr_th, res_left):
-    success = False
     reserved = []
 
+    found = False
+    success = False
     currentM = datetime.date.today().month
     # nextM = (datetime.date.today() + relativedelta(months=1)).month
     counter = currentM
     for left in res_left:
         if left == 0:
-            print('No reservations left for month '+str(counter))
+            print("No reservations left for month "+str(counter))
+            found = False
+            success = False
         else:
+            found = False
+            success = False
             for res in attr_list:
                 if res.dt.month != counter:  # Only check wanted month
                     continue
@@ -190,15 +178,20 @@ def reserveSuitable(web, own_list, attr_list, attr_th, res_left):
                     if neighbors or two:  # Has neighbors, or enough per week
                         continue
                     else:
+                        found = True
                         print('Suitable reservation found')
                         res.dispTime()
                         success = reserve(web, res)
                         if success:  # Succesfully reserved -> save to list
                             reserved.append(res)
                             own_list.append(res)
+                            print("Succesfully reserved")
                             continue
                         else:
-                            print("Failed to reserve the suitable time")
+                            print("Reservation found, but not succesfully reserved")
+            if not(found):
+                m = (datetime.date.today() + relativedelta(months=counter+1)).month
+                print("No suitable reservations for month "+str(m))
         counter += 1
 
     return reserved

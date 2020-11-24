@@ -2,25 +2,25 @@
 """
 Webbot for Sauna reservations in HOAS reservation system
 
-1) Login to HOAS reservations system
-2) Open sauna reservations
-3) Check how many monthly reservations are left, if none -> do nothing
-4) Open calendar and choose best day based on user preferations
-5) Make reservation(s) if there is a time that fills criteria
+1) Login to HOAS reservations system and open reservations calendar
+2) Check how many monthly reservations are left, if none -> do nothing
+3) List all free reservations
+4) Choose the best time(s) based on preferations
+5) Make reservation(s) if there is an available time that fills criteria
 
 Bugs:
 
 Development steps:
-- Refactor reservation function (check status)
-- Logout
-- Change to selenium
+- Change to selenium -> no double files
 - Move into AWS
 
+Windows: Add chromedriver.exe to PATH!
+Please see https://sites.google.com/a/chromium.org/chromedriver/home
 
 @author: ANTJA
 """
 from crypting import write_key, load_key, encrypt, decrypt
-from webbot import Browser
+from selenium import webdriver
 from time import localtime
 from time import sleep
 from datetime import date
@@ -70,7 +70,7 @@ def main():
     key = load_key(loc)
 
     # Make instance of browser
-    web = Browser()
+    web = webdriver.Chrome()
 
     # Open Sauna reservation system
     st.openSauna(web, loc, filename, key)
@@ -114,11 +114,11 @@ def main():
         resCal.addHour(res)
 
     # Logout
-    web.click("Kirjaudu ulos")
+    web.find_elements_by_link_text("Kirjaudu ulos")[0].click()
     sleep(1)
 
     # Close the web session
-    web.quit()
+    web.close()
 
 
 if __name__ == "__main__":
