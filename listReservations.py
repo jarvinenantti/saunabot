@@ -12,6 +12,7 @@ localtm = localtime()
 # Find and return how many reservations are left for use
 def reservationsLeft(web, two_months):
 
+    st.currentDay(web)
     parsed = st.returnSauna(web)
 
     left_current = -1
@@ -22,10 +23,11 @@ def reservationsLeft(web, two_months):
         # If Mon or Tue, go to Wed to see reservations left
         toClick = parsed.find("a", class_="js-datepicker").string
         if localtm.tm_wday < 2:
-            move = 2-localtm.tm_wday
-            web.click(toClick)
-            web.click(str(localtm.tm_mday+move))
-            sleep(1)
+            move = (date.today()+relativedelta(days=+(2-localtm.tm_wday))).day
+            web.find_elements_by_link_text(str(toClick))[0].click()
+            sleep(0.5)
+            web.find_elements_by_link_text(str(move))[0].click()
+            sleep(0.5)
             parsed = st.returnSauna(web)
 
         res_left = parsed.find("td", colspan="1")  # tag
@@ -57,7 +59,6 @@ def reservationsLeft(web, two_months):
             else:
                 st.wantedDay(web, lastAvailableDay)
                 parsed = st.returnSauna(web)
-                toClick = parsed.find("a", class_="js-datepicker").string
                 res_left = parsed.find("td", colspan="1")  # tag
                 text = str(res_left.contents[0])
                 textList = text.split()
@@ -153,10 +154,10 @@ def freeReservations(web):
             if following.has_attr("style") is True and following.attrs["style"] == "visibility: hidden;":
                 #  Last day
                 last = True
-                sleep(1)
+                sleep(0.5)
             else:
-                web.click("Seuraava")
-                sleep(1)
+                web.find_elements_by_link_text("Seuraava")[0].click()
+                sleep(0.5)
 
         except Exception as e:
             print(e)
