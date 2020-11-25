@@ -16,6 +16,7 @@ hrefC = "https://booking.hoas.fi/varaus/service/timetable/331/"
 localtm = localtime()
 
 
+#%%
 # Open sauna reservation system
 def openSauna(web, loc, filename, key):
 
@@ -83,7 +84,7 @@ def currentDay(web):
         print("Couldn't move into the current day")
 
 
-# Check whether own reservation at previous or next day, return boolean
+# Check whether own reservation at same, previous or next day, return boolean
 def hasNeighbors(own_list, res):
     hasN = False
 
@@ -94,8 +95,9 @@ def hasNeighbors(own_list, res):
 
     for r in own_list:
         x_date = r.dt.date()
-        if x_date == yminus1 or x_date == yplus1:
+        if x_date == y_date or x_date == yminus1 or x_date == yplus1:
             hasN = True
+            print(str(r.dt)+" has neighbors")
 
     return(hasN)
 
@@ -157,7 +159,6 @@ def reserveSuitable(web, own_list, attr_list, attr_th, res_left):
     found = False
     success = False
     currentM = datetime.date.today().month
-    # nextM = (datetime.date.today() + relativedelta(months=1)).month
     counter = currentM
     for left in res_left:
         if left == 0:
@@ -166,8 +167,8 @@ def reserveSuitable(web, own_list, attr_list, attr_th, res_left):
             success = False
         else:
             found = False
-            success = False
             for res in attr_list:
+                success = False
                 if res.dt.month != counter:  # Only check wanted month
                     continue
                 elif res.attr < attr_th:  # No suitable reservations
