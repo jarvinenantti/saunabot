@@ -217,8 +217,7 @@ def reserveSuitable(s, own_list, attr_list, attr_th, res_left):
                         else:
                             print("Reservation found, but not succesfully reserved")
             if not(found):
-                m = (datetime.date.today() + relativedelta(months=counter+1)).month
-                print("No suitable reservations for month "+str(m))
+                print("No suitable reservations for month "+str(counter))
         counter += 1
 
     return reserved
