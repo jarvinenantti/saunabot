@@ -66,8 +66,8 @@ def reservationsLeft(s, two_months):
             if lastAvailableDay.month == localtm.tm_mon:
                 left_next == 0
             else:
-                href = st.wantedDay(s, lastAvailableDay)
-                parsed = st.returnSauna(s)
+                href = st.wantedDay(lastAvailableDay)
+                parsed = st.returnSauna(s, href)
                 sleep(0.5)
 
                 res_left = parsed.find("td", colspan="1")  # tag

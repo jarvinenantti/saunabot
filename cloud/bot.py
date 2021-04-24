@@ -11,7 +11,7 @@ Webbot for Sauna reservations in HOAS reservation system
 Bugs:
 
 Development steps:
-- Move into AWS
+- Move to cloud
 - Add option to update unsuitable dates (e.g. via Telegram)
 
 Windows: Add chromedriver.exe to PATH!
@@ -29,7 +29,8 @@ import saunaTools as st
 import listReservations as lr
 
 # Define bot location and login info filename
-loc = os.getcwd()+"\\"
+# loc = os.getcwd()+"\\"
+loc = os.getcwd()+"/"
 filename = "login_info.txt"
 
 # IF FIRST TIME: generate and write a new key (uncomment)
