@@ -8,14 +8,9 @@ Webbot for Sauna reservations in HOAS reservation system
 4) Choose the best time(s) based on preferations
 5) Make reservation(s) if there is an available time that fills criteria
 
-Bugs:
-
 Development steps:
 - Move to cloud
 - Add option to update unsuitable dates (e.g. via Telegram)
-
-Windows: Add chromedriver.exe to PATH!
-Please see https://sites.google.com/a/chromium.org/chromedriver/home
 
 @author: ANTJA
 """
@@ -28,20 +23,24 @@ from resCal import reservationCal
 import saunaTools as st
 import listReservations as lr
 
+#%%
+
 # Define bot location and login info filename
-# loc = os.getcwd()+"\\"
-loc = os.getcwd()+"/"
+# Windows
+loc = os.getcwd()+"\\"
+# Unix
+# loc = os.getcwd()+"/"
 filename = "login_info.txt"
 
 # IF FIRST TIME: generate and write a new key (uncomment)
 # write_key(loc)
+# key = load_key(loc)
 # encrypt(loc, filename, key)
 
 # Define reservation attractiveness threshold on a scale of 0-10
 attr_th = 8
 
 localtm = localtime()
-
 
 # Return True if next month is reservable
 def nextMonthReservable():

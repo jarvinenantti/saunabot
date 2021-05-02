@@ -159,9 +159,9 @@ def freeReservations(s):
     # Check how many days are available
     i = 0
     if localtm.tm_hour < 21:
-        i = 13  # 14 days available
+        i = 14  # 14 days available
     else:
-        i = 14  # 15 days available
+        i = 15  # 15 days available
 
     # Iterate over all available days and return their reservation status
     currentDay = date.today()
