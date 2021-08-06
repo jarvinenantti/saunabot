@@ -10,14 +10,10 @@ Webbot for Sauna reservations in HOAS reservation system
 
 Bugs:
 
-Development steps:
-- Move to cloud
-- Add option to update unsuitable dates (e.g. via Telegram)
+Development:
+- Print reservation information for reserved
 
-Windows: Add chromedriver.exe to PATH!
-Please see https://sites.google.com/a/chromium.org/chromedriver/home
-
-@author: ANTJA
+@author: Antti Järvinen
 """
 from crypting import write_key, load_key, encrypt, decrypt
 from time import localtime
