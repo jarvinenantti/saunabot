@@ -13,5 +13,4 @@ TODO: 2.1: Use Telegram to communicate with Pi and sauna bot
 3.0 Modify for cloud compatibility
 3.1 Google Cloud -version
 
-
 Requires HOAS account. Login info deleted for obvious reasons ;)
