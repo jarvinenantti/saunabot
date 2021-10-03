@@ -8,69 +8,31 @@ Webbot for Sauna reservations in HOAS reservation system
 4) Choose the best time(s) based on preferations
 5) Make reservation(s) if there is an available time that fills criteria
 
-Development steps:
-- Move to cloud
-- Add option to update unsuitable dates (e.g. via Telegram)
-
 @author: ANTJA
 """
-from crypting import write_key, load_key, encrypt, decrypt
-from time import localtime
-from datetime import date
-from dateutil.relativedelta import relativedelta
+
 import os as os
+
 from resCal import reservationCal
 import saunaTools as st
 import listReservations as lr
 
-#%%
 
-# Define bot location and login info filename
-# Windows
-loc = os.getcwd()+"\\"
-# Unix
-# loc = os.getcwd()+"/"
-filename = "login_info.txt"
+def bot():
 
-# IF FIRST TIME: generate and write a new key (uncomment)
-# write_key(loc)
-# key = load_key(loc)
-# encrypt(loc, filename, key)
+    # Define bot location and login info filename
+    # Windows and Unix
+    loc = os.getcwd()+"/"
+    filename = "login_info.txt"
 
-# Define reservation attractiveness threshold on a scale of 0-10
-attr_th = 8
-
-localtm = localtime()
-
-# Return True if next month is reservable
-def nextMonthReservable():
-
-    reservable = False
-    forward = 0  # how many days forward is last reservable
-    if localtm.tm_hour >= 21:
-        forward = 15
-    else:
-        forward = 14
-    lastAvailableDay = date.today() + relativedelta(days=+forward)
-    if lastAvailableDay.month > localtm.tm_mon:
-        reservable = True
-        print("Reservations can also be made for the next month")
-
-    return reservable
-
-
-#%%
-
-
-def main():
-
-    key = load_key(loc)
+    # Define reservation attractiveness threshold on a scale of 0-10
+    attr_th = 9
 
     # Open Sauna reservation system
-    s = st.openSauna(loc, filename, key)
+    s = st.openSauna(loc, filename)
 
     # Check if reservations can be made for next month
-    two_months = nextMonthReservable()
+    two_months = st.nextMonthReservable()
 
     # Find how many reservation are left, split to current and next month
     res_left = lr.reservationsLeft(s, two_months)
@@ -110,7 +72,3 @@ def main():
 
     # Terminate session, ok we are done!
     s.get('https://booking.hoas.fi/auth/logout')
-
-
-if __name__ == "__main__":
-    main()
